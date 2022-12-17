@@ -138,6 +138,7 @@ const addProperty = function(property) {
   let properties = [];
   let values = [];
 
+  // Matching property keys with values
   for (const key in property) {
     const value = property[key];
     if (value) {
