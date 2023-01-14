@@ -1,5 +1,5 @@
 /// Users
-const db = require("./db");
+const db = require(".");
 /**
  * Get a single user from the database given their email.
  * @param {String} email The email of the user.
