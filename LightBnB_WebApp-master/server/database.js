@@ -9,8 +9,8 @@ const getUserWithEmail = function(email) {
   let queryParams = [email];
   let queryString = `SELECT * FROM users WHERE email = $1`;
   return db.query(queryString, queryParams)
-    .then((result) => result.rows ? result.rows[0] : null)
-    .catch((err) => console.log(err.message));
+    .then(result => result.rows ? result.rows[0] : null)
+    .catch(err => console.log(err.message));
 };
 exports.getUserWithEmail = getUserWithEmail;
 
@@ -24,8 +24,8 @@ const getUserWithId = function(id) {
   let queryParams = [id];
   let queryString = `SELECT * FROM users WHERE id = $1`;
   return db.query(queryString, queryParams)
-    .then((result) => result.rows ? result.rows[0] : null)
-    .catch((err) => console.log(err.message));
+    .then(result => result.rows ? result.rows[0] : null)
+    .catch(err => console.log(err.message));
 };
 exports.getUserWithId = getUserWithId;
 
@@ -42,8 +42,8 @@ const addUser =  function(user) {
   VALUES($1, $2, $3)
   RETURNING *;`;
   return db.query(queryString, queryParams)
-    .then((result) => result.rows[0])
-    .catch((err) => console.log(err.message));
+    .then(result => result.rows[0])
+    .catch(err => console.log(err.message));
 };
 exports.addUser = addUser;
 
@@ -57,14 +57,16 @@ exports.addUser = addUser;
 const getAllReservations = function(guest_id, limit = 10) {
   let queryParams = [guest_id, limit];
   let queryString = `
-  SELECT reservations.*, properties.*
+  SELECT reservations.*, properties.*, avg(rating) as average_rating
   FROM reservations
   JOIN properties ON properties.id = reservations.property_id
-  WHERE guest_id = $1
+  JOIN property_reviews ON properties.id = property_reviews.property_id
+  WHERE reservations.guest_id = $1
+  GROUP BY properties.id, reservations.id
   LIMIT $2;`;
   return db.query(queryString, queryParams)
-    .then((result) => result.rows)
-    .catch((err) => console.log(err.message));
+    .then(result => result.rows)
+    .catch(err => console.log(err.message));
 };
 exports.getAllReservations = getAllReservations;
 
@@ -109,21 +111,25 @@ const getAllProperties = function (options, limit = 10) {
     queryString += `${clause()} cost_per_night <= $${queryParams.length} `;
   }
 
+  queryString += `
+  GROUP BY properties.id
+  `;
+
   if (options.minimum_rating) {
     queryParams.push(`${options.minimum_rating}`);
-    queryString += `${clause()} property_reviews.rating >= $${queryParams.length} `;
+    queryString += `HAVING avg(property_reviews.rating) >= $${queryParams.length} `;
   }
 
   queryParams.push(limit);
+
   queryString += `
-  GROUP BY properties.id
   ORDER BY cost_per_night
   LIMIT $${queryParams.length};
   `;
 
   return db.query(queryString, queryParams)
-    .then((res) => res.rows)
-    .catch((err) => console.log(err.message));
+    .then(res => res.rows)
+    .catch(err => console.log(err.message));
 };
 exports.getAllProperties = getAllProperties;
 
@@ -160,7 +166,7 @@ const addProperty = function(property) {
   RETURNING *;`;
 
   return db.query(queryString, queryParams)
-    .then((res) => res.rows[0])
-    .catch((err) => console.log(err.message));
+    .then(res => res.rows[0])
+    .catch(err => console.log(err.message));
 };
 exports.addProperty = addProperty;
